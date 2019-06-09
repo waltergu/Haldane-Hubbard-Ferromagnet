@@ -31,12 +31,15 @@ def tbatasks(name,parameters,lattice,terms,nk=50,jobs=()):
 
 def fbfmtasks(name,parameters,lattice,terms,interactions,nk=50,scalefree=1.0,scaleint=1.0,jobs=()):
     import HamiltonianPy.FBFM as FB
+    from mpi4py import MPI
+    nprocs=MPI.COMM_WORLD.Get_size()
+    rank=MPI.COMM_WORLD.Get_rank()
     assert  len(lattice.vectors)==2
     ns,ne=len(lattice),len(lattice)//2
     if 'EB' in jobs:
         basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
         fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
-        fbfm.register(FB.EB(name='EB%s'%nk,path='H:G-K1,K1-M1,M1-K2,K2-G',ne=nk**2,scalefree=scalefree,scaleint=scaleint,plot=True,run=FB.FBFMEB))
+        fbfm.register(FB.EB(name='EB%s'%nk,path='H:G-K1,K1-M1,M1-K2,K2-G',ne=nk**2,scalefree=scalefree,scaleint=scaleint,np=nprocs,run=FB.FBFMEB))
     if 'CN' in jobs:
         basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
         fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
@@ -45,8 +48,8 @@ def fbfmtasks(name,parameters,lattice,terms,interactions,nk=50,scalefree=1.0,sca
         basis=FB.FBFMBasis(BZ=FBZ([lattice.reciprocals[0]],nks=(nk,)),filling=Fraction(ne,ns*2))
         path=basis.BZ.path(KMap([lattice.reciprocals[0]],'L:X2-X1'),mode='Q')
         fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
-        print("%s_%s"%(fbfm,nk))
-        fbfm.register(FB.EB(name='Domain%s'%nk,path=path,ne=ns*2,scalefree=scalefree,scaleint=scaleint,plot=True,method='eigsh',run=FB.FBFMEB))
+        if rank==0: print("%s_%s"%(fbfm,nk))
+        fbfm.register(FB.EB(name='Domain%s'%nk,path=path,ne=ns*2,scalefree=scalefree,scaleint=scaleint,method='eigsh',np=nprocs,run=FB.FBFMEB))
     fbfm.summary()
 
 def fbfmphaseboundary(task,name,parameters,lattice,terms,interactions,ranges,nk=50,scalefree=1.0,scaleint=1.0):
@@ -98,7 +101,7 @@ if __name__=='__main__':
     #tbatasks(name1,parameters,H2('1P-1P',nnb),[t,ci],nk=nk,jobs=['CN1'])
     #tbatasks(name1,parameters,H2('1P-1P',nnb),[t,ci],nk=nk,jobs=['CN2'])
 
-    N=16
+    N=6
     pos=2*N/2
     lattice=H2('1P-%sP'%N,nnb)
 
@@ -114,10 +117,10 @@ if __name__=='__main__':
     #tbatasks(name1,parameters,lattice,[t,t2l(pos),t2r(pos),t2a(pos),dml(pos),dmr(pos)],jobs=['Domain'])
 
     # fbfm
-    #parameters['Ua']=2.7
-    #parameters['Ub']=1.7
+    #parameters['Ua']=2.0
+    #parameters['Ub']=2.0
 
-    nk=30
+    nk=60
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['EB'])
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.1,scaleint=1.0,jobs=['EB'])
 
@@ -134,7 +137,7 @@ if __name__=='__main__':
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['CN'])
 
     # fbfm domain wall
-    nk=30
+    nk=60
     parameters['Ual']=2.0
     parameters['Ubl']=2.0
     parameters['Uar']=2.7

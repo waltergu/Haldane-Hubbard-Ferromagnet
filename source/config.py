@@ -48,15 +48,13 @@ Ub=lambda **parameters: Hubbard('Ub',parameters['Ub'],atom=1,statistics='f')
 def left(pos):
     def amplitude(bond):
         s1,s2=bond.spoint.pid.site,bond.epoint.pid.site
-        #assert s1==s2
-        return 1 if s1<pos else 0
+        return 1 if s1<pos and s2<pos else 0
     return amplitude
 
 def right(pos):
     def amplitude(bond):
         s1,s2=bond.spoint.pid.site,bond.epoint.pid.site
-        #assert s1==s2
-        return 1 if s1>=pos else 0
+        return 1 if s1>=pos and s2>=pos else 0
     return amplitude
 
 def accoss(pos):
