@@ -10,14 +10,16 @@ def tbatasks(name,parameters,lattice,terms,nk=50,jobs=()):
     tba=tbaconstruct(name,parameters,lattice,terms)
     if 'EB' in jobs:
         if len(lattice.vectors)==2:
-            tba.register(EB(name='EB',path=hexagon_gkm(reciprocals=lattice.reciprocals,nk=100),run=TBA.TBAEB))
+            path=FBZ(lattice.reciprocals,nks=(120,120)).path(KMap(lattice.reciprocals,'H:G-K2,K2-M1,M1-K1,K1-G'),mode='P')
+            tba.register(EB(name='EB',path=path,run=TBA.TBAEB))
+            #tba.register(EB(name='EB',path=hexagon_gkm(reciprocals=lattice.reciprocals,nk=100),run=TBA.TBAEB))
         elif len(lattice.vectors)==1:
-            tba.register(EB(name='EB',path=KSpace(reciprocals=lattice.reciprocals,segments=[(-0.5,0.5)],end=True,nk=401),run=TBA.TBAEB))
+            tba.register(EB(name='EB',path=KSpace(reciprocals=lattice.reciprocals,segments=[(0,1.0)],end=True,nk=401),run=TBA.TBAEB))
         else:
             tba.register(EB(name='EB',run=TBA.TBAEB))
-        data=tba.records['EB']
-        print("bandwidth: %s"%(data[:,1].max()-data[:,1].min()))
-        print("gap: %s"%(data[:,3].min()-data[:,1].max()))
+        #data=tba.records['EB']
+        #print("bandwidth: %s"%(data[:,1].max()-data[:,1].min()))
+        #print("gap: %s"%(data[:,3].min()-data[:,1].max()))
     if 'CN1' in jobs:
         assert len(lattice.vectors)==2
         tba.register(CN(name='CN1',BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),ns=(0,1),run=TBA.TBACN))
@@ -39,6 +41,7 @@ def fbfmtasks(name,parameters,lattice,terms,interactions,nk=50,scalefree=1.0,sca
     if 'EB' in jobs:
         basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
         fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
+        #fbfm.register(FB.EB(name='EB%s'%nk,path='H:G-K1',ne=nk**2,scalefree=scalefree,scaleint=scaleint,np=nprocs,run=FB.FBFMEB))
         fbfm.register(FB.EB(name='EB%s'%nk,path='H:G-K1,K1-M1,M1-K2,K2-G',ne=nk**2,scalefree=scalefree,scaleint=scaleint,np=nprocs,run=FB.FBFMEB))
     if 'CN' in jobs:
         basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
@@ -92,21 +95,24 @@ if __name__=='__main__':
     # parameters
     parameters=OrderedDict()
     parameters['t1']=1.0
-    parameters['t2']=0.280
+    parameters['t2']=0.32
     parameters['phi']=0.656
-    delta=0.6
+    delta=0.0
 
     # tba
     #tbatasks(name1,parameters,H2('1P-1P',nnb),[t,ci],jobs=['EB'])
     #tbatasks(name1,parameters,H2('1P-1P',nnb),[t,ci],nk=nk,jobs=['CN1'])
     #tbatasks(name1,parameters,H2('1P-1P',nnb),[t,ci],nk=nk,jobs=['CN2'])
 
-    N=6
-    pos=2*N/2
-    lattice=H2('1P-%sP'%N,nnb)
+    #parameters['dm']=1.0#3*np.sqrt(3)*parameters['t2']
+    #tbatasks(name1,parameters,H2('1P-1P',nnb),[t,ci,dm],jobs=['EB'])
+    #tbatasks(name1,parameters,H2('50O-1P',nnb),[t,ci,dm],nk=200,jobs=['EB'])
+
+    #N=6
+    #lattice=H2('1P-%sP'%N,nnb)
+    #pos=2*N/2
 
     # tba domain wall
-
     #parameters['dml']=0.2
     #parameters['dmr']=0.0
     #tbatasks(name1,parameters,lattice,[t,ci,dml(pos),dmr(pos)],jobs=['Domain'])
@@ -117,19 +123,19 @@ if __name__=='__main__':
     #tbatasks(name1,parameters,lattice,[t,t2l(pos),t2r(pos),t2a(pos),dml(pos),dmr(pos)],jobs=['Domain'])
 
     # fbfm
-    #parameters['Ua']=2.0
-    #parameters['Ub']=2.0
+    parameters['Ua']=1.2
+    parameters['Ub']=parameters['Ua']-delta
 
-    nk=60
+    #nk=60
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['EB'])
-    #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.1,scaleint=1.0,jobs=['EB'])
+    #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['EB'])
 
-    nk=20
-    ts=np.linspace(0.2,0.3,101)
+    #nk=20
+    #ts=np.linspace(0.2,0.3,101)
     #fbfmphaseboundary('nfm-fm: t2',name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],ts,nk=nk,scalefree=1.0,scaleint=1.0)
     #fbfmphaseboundary('tfm-fm: t2',name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],ts,nk=nk,scalefree=1.0,scaleint=1.0)
 
-    us=np.linspace(0.0,0.3,301)
+    #us=np.linspace(0.0,0.8,801)
     #fbfmphaseboundary('nfm-fm: dU',name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],us,nk=nk,scalefree=1.0,scaleint=1.0)
     #fbfmphaseboundary('tfm-fm: dU',name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],us,nk=nk,scalefree=1.0,scaleint=1.0)
 
@@ -137,14 +143,14 @@ if __name__=='__main__':
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['CN'])
 
     # fbfm domain wall
-    nk=60
-    parameters['Ual']=2.0
-    parameters['Ubl']=2.0
-    parameters['Uar']=2.7
-    parameters['Ubr']=1.7
-    fbfmtasks(name1,parameters,lattice,[t,ci],[Ual(pos),Uar(pos),Ubl(pos),Ubr(pos)],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['Domain'])
+    #nk=60
+    #parameters['Ual']=1.9
+    #parameters['Ubl']=1.9
+    #parameters['Uar']=2.7
+    #parameters['Ubr']=1.7
+    #fbfmtasks(name1,parameters,lattice,[t,ci],[Ual(pos),Uar(pos),Ubl(pos),Ubr(pos)],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['Domain'])
 
-    nk=30
+    #nk=30
     #parameters['t2l']=1.2
     #parameters['t2r']=1.2
     #parameters['t2a']=1.2*2
