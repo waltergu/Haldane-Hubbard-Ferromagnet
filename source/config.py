@@ -1,7 +1,7 @@
 from HamiltonianPy import *
 import numpy as np
 
-__all__=['name1','name2','nnb','parametermap','idfmap','haldane','km','t','ci','ti','dm','Ua','Ub','t2l','t2r','t2a','dml','dmr','Ual','Uar','Ubl','Ubr','H2','H4']
+__all__=['name1','name2','nnb','parametermap','idfmap','haldane','km','t','ci','ti','dm','Ua','Ub','t2l','t2r','t2a','dml','dmr','Ual','Uar','Ubl','Ubr','H2','H4','effectiveH','EEB','FBFMEEB','FBFMECN']
 
 # The configs of the model
 name1="HCI"
@@ -76,3 +76,101 @@ Ubr=lambda pos: lambda **params: Hubbard('Ubr',params['Ubr'],atom=1,amplitude=ri
 # cluster
 H2=Hexagon('H2')
 H4=Hexagon('H4')
+
+import itertools as it
+import scipy.linalg as sl
+def effectiveH(fbfm,k,scalefree=1.0,scaleint=1.0,schmidt=False):
+    k=fbfm.basis.BZ.type(k)
+    assert fbfm.basis.nsp==1
+    permutation=np.argsort((fbfm.basis.BZ-k).sorted(history=True)[1])
+    eups,uups=fbfm.basis.E2[:,0],fbfm.basis.U2[:,:,0]
+    edws,udws=fbfm.basis.E1[:,0],fbfm.basis.U1[:,:,0]
+    Us=np.array([opt.value for opt in fbfm.igenerator.operators.values()])
+    assert len(Us)==uups.shape[0]==udws.shape[0]
+    vs=[]
+    es=edws[permutation]-eups
+    sums=np.zeros(fbfm.basis.nk,dtype=fbfm.dtype)
+    for i,(uup,udw) in enumerate(zip(uups,udws)):
+        udw=udw[permutation]
+        vs.append(np.sqrt(Us[i]/fbfm.basis.nk)*uup.conjugate()*udw)
+        for j in range(len(udw)):
+            sums[j]+=np.vdot(uup,uup)*udw[j]*udw[j].conjugate()*Us[i]/fbfm.basis.nk
+    V=np.zeros((len(vs),len(vs)),dtype=fbfm.dtype)
+    E=np.zeros((len(vs),len(vs)),dtype=fbfm.dtype)
+    U=np.zeros((len(vs),len(vs)),dtype=fbfm.dtype)
+    # if schmidt:
+    #     S=np.zeros((len(vs),len(vs)),dtype=fbfm.dtype)
+    #     S[0,0]=1/sl.norm(vs[0])
+    #     S[1,0]=0
+    #     inner=np.vdot(vs[0],vs[1])/np.vdot(vs[0],vs[0])
+    #     norm=sl.norm(vs[1]-inner*vs[0])
+    #     S[0,1]=-inner/norm
+    #     S[1,1]=1/norm
+    #     vs=np.array(vs)
+    #     vs=S.T.dot(vs)
+    #     for (i,j) in it.product(range(len(vs)),range(len(vs))):
+    #         V[i,j]=np.vdot(vs[i],vs[j])
+    #         E[i,j]=np.vdot(vs[i],es*vs[j])
+    #         U[i,j]=np.vdot(vs[i],sums*vs[j])
+    #     assert np.allclose(V,np.identity(len(vs)))
+    #     E*=scalefree
+    #     U*=scaleint
+    #     M=E+U-sl.inv(S).dot(sl.inv(S).T.conjugate())
+    for (i,j) in it.product(range(len(vs)),range(len(vs))):
+        V[i,j]=np.vdot(vs[i],vs[j])
+        E[i,j]=np.vdot(vs[i],es*vs[j])
+        U[i,j]=np.vdot(vs[i],sums*vs[j])
+    E*=scalefree
+    U*=scaleint
+    M=np.dot(sl.inv(V),E+U)-V
+    if schmidt:
+        S=np.zeros((len(vs),len(vs)),dtype=fbfm.dtype)
+        S[0,0]=1/sl.norm(vs[0])
+        S[1,0]=0
+        inner=np.vdot(vs[0],vs[1])/np.vdot(vs[0],vs[0])
+        norm=sl.norm(vs[1]-inner*vs[0])
+        S[0,1]=-inner/norm
+        S[1,1]=1/norm
+        M=sl.inv(S).dot(M).dot(S)
+    return M
+
+import HamiltonianPy.FBFM as FB
+
+class EEB(FB.EB):
+    def __init__(self,scalefree=1.0,scaleint=1.0,showms=(),schmidt=False,**karg):
+        super(FB.EB,self).__init__(**karg)
+        self.scalefree=scalefree
+        self.scaleint=scaleint
+        self.showms=showms
+        self.schmidt=schmidt
+
+def FBFMEEB(engine,app):
+    path=app.path
+    bz,reciprocals=engine.basis.BZ,engine.lattice.reciprocals
+    if not isinstance(path,BaseSpace): path=bz.path(KMap(reciprocals,path) if isinstance(path,str) else path,mode='Q')
+    result=np.zeros((path.rank(0),engine.basis.U1.shape[0]+1))
+    result[:,0]=path.mesh(0) if path.mesh(0).ndim==1 else np.array(range(path.rank(0)))
+    flag=True
+    for i,paras in enumerate(path('+')):
+        m=effectiveH(engine,schmidt=app.schmidt,scalefree=app.scalefree,scaleint=app.scaleint,**paras)
+        if i in app.showms: engine.log<<'%s: \n%s\n'%(i,m)
+        flag=flag and np.allclose(m,m.T.conjugate())
+        evs=sl.eig(m)[0]
+        assert np.allclose(evs.imag,0.0)
+        result[i,1:]=sorted(evs.real)
+    engine.log<<'Hermitian: %s\n'%flag
+    name='%s_%s%s'%(engine.tostr(mask=path.tags),app.name,app.suffix)
+    if app.savedata: np.savetxt('%s/%s.dat'%(engine.dout,name),result)
+    if app.plot: app.figure('L',result,'%s/%s'%(engine.dout,name))
+    if app.returndata: return result
+
+def FBFMECN(engine,app):
+    engine.log<<'%s\n'%engine
+    engine.log<<'%s: '%app.BZ.rank('k')
+    def matrix(i,j):
+        engine.log<<'%s-%s%s'%(i,j,'..' if (i+1,j+1)!=app.BZ.type.periods else '')
+        return effectiveH(engine,k=[i,j])
+    phases=app.set(matrix)
+    engine.log<<'\n'
+    engine.log<<'Chern numbers: %s'%(", ".join("%s(%s)"%(phase,n) for n,phase in zip(app.ns,phases)))<<'\n'
+    if app.returndata: return phases

@@ -9,13 +9,14 @@ import pdb
 def lattice():
     from HamiltonianPy import PID,translation,rotation,Lattice
     from HamiltonianPy import Hexagon
-    import itertools as it
+    from mpl_toolkits.mplot3d import Axes3D
 
     plt.ion()
-    fig,axes=plt.subplots(nrows=1,ncols=2)
-    fig.subplots_adjust(left=0.05,right=0.98,top=1.0,bottom=0.0,hspace=0.2,wspace=0.1)
 
-    ax=axes[0]
+    gs=plt.GridSpec(1,3)
+    gs.update(left=0.05,right=1.0,top=1.0,bottom=0.0,hspace=0.22,wspace=0.1)
+
+    ax=plt.subplot(gs[0,0])
     ax.axis('off')
     ax.axis('equal')
     ax.set_ylim(-0.5,1.2)
@@ -73,7 +74,7 @@ def lattice():
     ax.text(0.0,0.85,"(a)",ha='left',va='center',fontsize=16,color='black')
 
     # The Brillouin Zone
-    ax=axes[1]
+    ax=plt.subplot(gs[0,1])
     ax.axis('equal')
     ax.axis('off')
     ax.set_ylim(-1.0,1.0)
@@ -98,17 +99,41 @@ def lattice():
     # axis
     for disp in [np.array([0.60,0.0]),np.array([0.0,0.75])]:
         ax.arrow(-disp[0],-disp[1],2*disp[0],2*disp[1],head_width=0.03,head_length=0.05,fc='k',ec='k')
-    ax.text(0.62,-0.03,"$\mathrm{k_x}$",va='top',ha='center',fontsize=14,color='black')
+    ax.text(0.6,-0.03,"$\mathrm{k_x}$",va='top',ha='left',fontsize=14,color='black')
     ax.text(-0.02,0.75,"$\mathrm{k_y}$",va='center',ha='right',fontsize=14,color='black')
 
     # high-symmetric points
-    ax.text(-0.05,0.01,"$\Gamma$",ha='center',va='bottom',fontsize=16,color='black')
-    ax.text(0.6,0.05,"$K$",ha='center',fontsize=16,color='black')
+    ax.text(-0.01,0.01,"$\Gamma$",ha='right',va='bottom',fontsize=16,color='black')
+    ax.text(0.6,0.055,"$K$",ha='center',va='bottom',fontsize=16,color='black')
     ax.text(0.3,0.5,"$K'$",fontsize=16,color='black')
-    ax.text(0.495,0.295,"$M$",ha='center',va='center',fontsize=16,color='black')
+    ax.text(0.495,0.27,"$M$",ha='center',va='bottom',fontsize=16,color='black')
 
     # numbering of subplot
     ax.text(-0.65,0.77,"(b)",ha='left',va='center',fontsize=16,color='black')
+
+    # The domain wall geometry
+    ax=plt.subplot(gs[0,2],projection='3d')
+    ax.axis('off')
+    r,R=0.2,1.0
+    ax.set_xlim3d(-1,1)
+    ax.set_ylim3d(-1,1)
+    ax.set_zlim3d(-0.75,0.75)
+
+    theta,phi=np.meshgrid(np.linspace(0,np.pi,32),np.linspace(0,2*np.pi,32))
+    X=(R+r*np.cos(phi))*np.cos(theta)
+    Y=(R+r*np.cos(phi))*np.sin(theta)
+    Z=r*np.sin(phi)
+    ax.plot_surface(X,Y,Z,color='blue',alpha=0.5,rstride=1,cstride=1)
+
+    theta,phi=np.meshgrid(np.linspace(np.pi,2*np.pi,32),np.linspace(0,2*np.pi,32))
+    X=(R+r*np.cos(phi))*np.cos(theta)
+    Y=(R+r*np.cos(phi))*np.sin(theta)
+    Z=r*np.sin(phi)
+    ax.plot_surface(X,Y,Z,color='green',alpha=0.5,rstride=1,cstride=1)
+
+    ax.text2D(0.05,0.99,"(c)",transform=ax.transAxes,color='black',fontsize=16,va='top',ha='left')
+    ax.text2D(0.07,0.60,"L",transform=ax.transAxes,color='black',fontsize=16,va='center',ha='left')
+    ax.text2D(0.88,0.30,"R",transform=ax.transAxes,color='black',fontsize=16,va='center',ha='right')
 
     pdb.set_trace()
     plt.savefig('lattice.pdf')
@@ -116,40 +141,58 @@ def lattice():
 
 def constH0spectra():
     plt.ion()
-    fig,axes=plt.subplots(nrows=2,ncols=2)
-    fig.subplots_adjust(left=0.11,right=0.98,top=0.98,bottom=0.125,hspace=0.1,wspace=0.1)
+    fig,axes=plt.subplots(nrows=2,ncols=3)
+    fig.subplots_adjust(left=0.11,right=0.98,top=0.98,bottom=0.15,hspace=0.1,wspace=0.1)
 
-    for i,(tag,parameter) in enumerate(zip(['a','b','c','d'],['1.2','1.1','0.8','0.501'])):
-        ax=axes[i//2][i%2]
-        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.314_0.656_1.2_%s_FBFM_EB60.npz'%parameter
+    for i,(tag,parameter) in enumerate(zip(['a','b','c'],['1.2','1.068','0.506'])):
+        ax=axes[0][i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EB60(0.0,1.0).npz'%parameter
         data=np.load(name)['data']
-        ax.plot(data[:,0],data[:,1:3],color='green',lw=2.5,zorder=4)
-        # ax.plot(data[:,0],data[:,3:],color=(0.8,0.8,0.8),lw=3.5,alpha=0.02,zorder=2)
-        ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color=(0.8,0.8,0.8),alpha=0.9,zorder=2)
-
-        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.314_0.656_1.2_%s_FBFM_EB60(0.0,1.0).npz'%parameter
-        data=np.load(name)['data']
-        ax.plot(data[:,0],data[:,1:3],ls='-',color='blue',alpha=0.5,lw=1.5,zorder=3)
-        # ax.plot(data[:,0],data[:,3:],color='blue',lw=2.0 if i==0 else 1.0,alpha=0.01,zorder=1)
+        ax.plot(data[:,0],data[:,1:3],ls='-',color='blue',alpha=0.9,lw=1.5,zorder=3)
         ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color='blue',alpha=0.2,zorder=2)
-
-        ax.axvline(x=20,ls='--',color='black',lw=1,zorder=0)
-        ax.axvline(x=30,ls='--',color='black',lw=1,zorder=0)
-        ax.axvline(x=40,ls='--',color='black',lw=1,zorder=0)
+        ax.axvline(x=20,ls=':',color='black',alpha=0.5,lw=1,zorder=0)
+        ax.axvline(x=30,ls=':',color='black',alpha=0.5,lw=1,zorder=0)
+        ax.axvline(x=40,ls=':',color='black',alpha=0.5,lw=1,zorder=0)
+        if i==1: ax.text(30,0.1,'$C=0$',ha='center',va='center',fontsize=14,color='black')
+        if i==2: ax.text(30,0.075,'$C=0$',ha='center',va='center',fontsize=14,color='black')
 
         ax.minorticks_on()
         ax.set_xlim(0.0,60.0)
         ax.set_xticks(np.linspace(0,60,7))
-        ax.set_xticklabels(['$\Gamma$','','$K$','$M$','$K^\prime$','','$\Gamma$'] if i in (2,3) else ['']*7)
+        ax.set_xticklabels(['']*7)
         for tick in ax.get_xticklabels(): tick.set_fontsize(16)
-        if i in (2,3): ax.set_xlabel('q',fontdict={'fontsize':14})
 
         ax.set_ylim(0.0,0.7)
         ax.set_yticks(np.linspace(0.0,0.7,8))
-        ax.set_yticklabels(['0','0.1','0.2','0.3','0.4','0.5','0.6','0.7'] if i in (0,2) else ['']*8)
+        ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''] if i in (0,) else ['']*8)
         for tick in ax.get_yticklabels(): tick.set_fontsize(13)
-        if i in (0,2): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
-        ax.text(3.0,0.68,'(%s)'%tag,ha='left',va='top',fontsize=16,color='black')
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
+        ax.text(3.0,0.68,'(%s$_1$)'%tag,ha='left',va='top',fontsize=13,color='black')
+
+        ax=axes[1][i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EB60.npz'%parameter
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='green',lw=1.5,zorder=4)
+        ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color=(0.8,0.8,0.8),alpha=0.9,zorder=2)
+        ax.axvline(x=20,ls=':',color='black',alpha=0.5,lw=1,zorder=0)
+        ax.axvline(x=30,ls=':',color='black',alpha=0.5,lw=1,zorder=0)
+        ax.axvline(x=40,ls=':',color='black',alpha=0.5,lw=1,zorder=0)
+        if i==0: ax.text(30,0.1,'$C=+1$',ha='center',va='center',fontsize=14,color='black')
+        if i==2: ax.text(30,0.035,'$C=0$',ha='center',va='center',fontsize=14,color='black')
+
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['$\Gamma$','','$K$','$M$','$K^\prime$','','$\Gamma$'])
+        for tick in ax.get_xticklabels(): tick.set_fontsize(16)
+        ax.set_xlabel('q',fontdict={'fontsize':14})
+
+        ax.set_ylim(0.0,0.7)
+        ax.set_yticks(np.linspace(0.0,0.7,8))
+        ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''] if i in (0,) else ['']*8)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(13)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
+        ax.text(3.0,0.68,'(%s$_2$)'%tag,ha='left',va='top',fontsize=13,color='black')
 
     pdb.set_trace()
     plt.savefig('constH0spectra.pdf')
@@ -158,19 +201,19 @@ def constH0spectra():
 def constHUspectra():
     plt.ion()
     fig,axes=plt.subplots(nrows=1,ncols=3)
-    fig.subplots_adjust(left=0.115,right=0.98,top=0.975,bottom=0.18,hspace=0.1,wspace=0.1)
+    fig.subplots_adjust(left=0.11,right=0.98,top=0.965,bottom=0.27,hspace=0.1,wspace=0.1)
 
     for i,(tag,parameter) in enumerate(zip(['a','b','c'],['0.29','0.308','0.32'])):
         ax=axes[i]
         name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_%s_0.656_1.2_1.2_FBFM_EB60.npz'%parameter
         data=np.load(name)['data']
         ax.plot(data[:,0],data[:,1:3],color='green',lw=2,zorder=4)
-        # ax.plot(data[:,0],data[:,3:],color=(0.8,0.8,0.8),lw=3.5,alpha=0.9,zorder=2)
         ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color=(0.8,0.8,0.8),alpha=0.9,zorder=2)
-
-        ax.axvline(x=20,ls='--',color='black',lw=1,zorder=0)
-        ax.axvline(x=30,ls='--',color='black',lw=1,zorder=0)
-        ax.axvline(x=40,ls='--',color='black',lw=1,zorder=0)
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        if i==0: ax.text(30,0.1,'$C=+1$',ha='center',va='center',fontsize=16,color='black')
+        if i==2: ax.text(30,0.1,'$C=-1$',ha='center',va='center',fontsize=16,color='black')
 
         ax.minorticks_on()
         ax.set_xlim(0.0,60.0)
@@ -193,48 +236,54 @@ def constHUspectra():
 def phasediagram():
     plt.ion()
     fig,axes=plt.subplots(nrows=1,ncols=1)
-    fig.subplots_adjust(left=0.14,right=0.96,top=0.97,bottom=0.145,hspace=0.2,wspace=0.40)
+    fig.subplots_adjust(left=0.11,right=0.96,top=0.965,bottom=0.185,hspace=0.2,wspace=0.40)
 
     ax=axes
     ts=np.array([0.2445,0.2600,0.2700,0.2732,0.2770,0.2790,0.2800,0.2850,0.2900,0.2950,0.3000,0.3080,0.3100,0.3155,0.3200,0.3250,0.3300,0.3350,0.3400,0.3450,0.3495])
     us=np.array([0.0000,0.2825,0.4285,0.4705,0.5195,0.5415,0.5515,0.5975,0.6375,0.6695,0.6945,0.7075,0.7065,0.6945,0.6775,0.6505,0.6135,0.5335,0.3545,0.1665,0.0000])
-    ax.plot(ts,us,lw=2,color='blue',zorder=1)
+    X=np.linspace(ts.min(),ts.max(),201)
+    Y=itp.splev(X,itp.splrep(ts,us,k=3),der=0)
+    ax.plot(X,Y,lw=2,color='blue',zorder=1)
 
     ts=np.array([0.2732,0.2800,0.2850,0.2900,0.2950,0.3000,0.3080])
     us=np.array([0.4705,0.3835,0.3215,0.2615,0.2005,0.1315,0.0000])
-    ax.plot(ts,us,lw=2,color='blue',zorder=1)
+    X=np.linspace(ts.min(),ts.max(),201)
+    Y=itp.splev(X,itp.splrep(ts,us,k=3),der=0)
+    ax.plot(X,Y,lw=2,color='blue',zorder=1)
 
     ts=np.array([0.3080,0.3100,0.3155,0.3200,0.3250,0.3300,0.3350])
     us=np.array([0.0000,0.0235,0.1325,0.2545,0.3585,0.4605,0.5335])
-    ax.plot(ts,us,lw=2,color='blue',zorder=1)
+    X=np.linspace(ts.min(),ts.max(),201)
+    Y=itp.splev(X,itp.splrep(ts,us,k=3),der=0)
+    ax.plot(X,Y,lw=2,color='blue',zorder=1)
 
     xs=[0.29,0.308,0.32]
     ys=[0.000,0.000,0.000]
-    ax.scatter(xs,ys,s=60,color='green',marker='o',zorder=2,clip_on=False)
+    ax.scatter(xs,ys,s=30,color='green',marker='o',zorder=2,clip_on=False)
 
-    xs=[0.314,0.314,0.314,0.314]
-    ys=[0.000,0.100,0.400,0.699]
+    xs=[0.3155,0.3155,0.3155]
+    ys=[0.0000,0.1320,0.6940]
     ax.scatter(xs,ys,s=100,color='red',marker='*',zorder=2,clip_on=False)
 
     ax.minorticks_on()
     ax.set_xlim(0.24,0.36)
     ax.set_ylim(0.00,0.75)
     ax.set_xticks(np.linspace(0.24,0.36,7))
-    ax.set_yticks(np.linspace(0.0,0.75,4))
-    ax.set_yticklabels(['0','0.25','0.5','0.75'])
+    ax.set_yticks(np.linspace(0.0,0.7,8))
+    ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''])
     for tick in ax.get_xticklabels():
-        tick.set_fontsize(18)
+        tick.set_fontsize(16)
     for tick in ax.get_yticklabels():
-        tick.set_fontsize(18)
+        tick.set_fontsize(16)
     ax.set_xlabel("$t^\prime/t$",fontdict={'fontsize':22})
     ax.set_ylabel("$\Delta U/t$",fontdict={'fontsize':22})
     ax.text(0.26,0.53,"NFM",fontsize=22,color='black',ha='center',va='center')
     ax.text(0.305,0.43,"FM",fontsize=22,color='black',ha='center',va='center')
     ax.text(0.305,0.33,"$(C=0)$",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.27,0.22,"TFM",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.27,0.12,"$(C=1)$",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.33,0.22,"TFM",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.33,0.12,"$(C=-1)$",fontsize=22,color='black',ha='center',va='center')
+    ax.text(0.275,0.2,"TFM$^+$",fontsize=22,color='black',ha='center',va='center')
+    ax.text(0.275,0.1,"$(C=+1)$",fontsize=22,color='black',ha='center',va='center')
+    ax.text(0.3305,0.2,"TFM$^-$",fontsize=22,color='black',ha='center',va='center')
+    ax.text(0.3305,0.1,"$(C=-1)$",fontsize=22,color='black',ha='center',va='center')
 
     pdb.set_trace()
     plt.savefig('phasediagram.pdf')
@@ -245,7 +294,7 @@ def domainwallspectra():
 
     plt.ion()
     fig,axes=plt.subplots(nrows=3,ncols=1)
-    fig.subplots_adjust(left=0.12,right=0.98,top=0.99,bottom=0.09,hspace=0.1,wspace=0.1)
+    fig.subplots_adjust(left=0.12,right=0.98,top=0.99,bottom=0.10,hspace=0.1,wspace=0.1)
 
     names=[ '../result/fbfm/HCI_H2(1P-18P)_up_1.0_0.28_0.656_2.0_2.0_2.7_1.7_FBFM_Domain80.npz',
             '../result/fbfm/HCI_H2(1P-18P)_up_1.0_0.33_0.656_2.0_2.0_2.7_1.7_FBFM_Domain80.npz',
@@ -271,7 +320,7 @@ def domainwallspectra():
         ax.plot(data[:,0],data[:,36:38],lw=2.5,color='green',zorder=1)
         ax.plot(data[:,0],data[:,38:],lw=2.5,color=(0.7,0.7,0.7),zorder=0)
 
-        ax.axvline(x=40,ls='--',color='black',lw=1,zorder=0)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0)
 
         ax.minorticks_on()
         ax.set_xlim(0.0,80.0)
@@ -282,7 +331,7 @@ def domainwallspectra():
 
         ax.set_ylim(0.0,0.7)
         ax.set_yticks(np.linspace(0.0,0.7,8))
-        ax.set_yticklabels(['0','0.1','0.2','0.3','0.4','0.5','0.6','0.7'])
+        ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''])
         for tick in ax.get_yticklabels(): tick.set_fontsize(13)
         ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
         ax.text(2.0,0.68,'(%s)'%tag,ha='left',va='top',fontsize=16,color='black')
@@ -292,9 +341,9 @@ def domainwallspectra():
         data=np.load(lname)['data']
         ax.plot(data[:,0],data[:,1:3],color='green',lw=1.5,zorder=4)
         ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color=(0.8,0.8,0.8),alpha=0.9,zorder=2)
-        ax.axvline(x=20,ls='--',color='grey',lw=1,zorder=0)
-        ax.axvline(x=30,ls='--',color='grey',lw=1,zorder=0)
-        ax.axvline(x=40,ls='--',color='grey',lw=1,zorder=0)
+        ax.axvline(x=20,ls=':',color='grey',lw=1,zorder=0)
+        ax.axvline(x=30,ls=':',color='grey',lw=1,zorder=0)
+        ax.axvline(x=40,ls=':',color='grey',lw=1,zorder=0)
         ax.text(30,0.05,"$C=%s$"%LC,ha='center',va='bottom',fontsize=16,color='black')
 
         ax.minorticks_on()
@@ -319,9 +368,9 @@ def domainwallspectra():
         data=np.load(rname)['data']
         ax.plot(data[:,0],data[:,1:3],color='green',lw=1.5,zorder=4)
         ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color=(0.8,0.8,0.8),alpha=0.9,zorder=2)
-        ax.axvline(x=20,ls='--',color='grey',lw=1,zorder=0)
-        ax.axvline(x=30,ls='--',color='grey',lw=1,zorder=0)
-        ax.axvline(x=40,ls='--',color='grey',lw=1,zorder=0)
+        ax.axvline(x=20,ls=':',color='grey',lw=1,zorder=0)
+        ax.axvline(x=30,ls=':',color='grey',lw=1,zorder=0)
+        ax.axvline(x=40,ls=':',color='grey',lw=1,zorder=0)
         ax.text(30,0.05,"$C=%s$"%RC,ha='center',va='bottom',fontsize=16,color='black')
 
         ax.minorticks_on()
@@ -344,6 +393,160 @@ def domainwallspectra():
     plt.savefig('domainwallspectra.pdf')
     plt.close()
 
+def effectivespectra():
+    plt.ion()
+    fig,axes=plt.subplots(nrows=2,ncols=3)
+    fig.subplots_adjust(left=0.115,right=0.98,top=0.965,bottom=0.17,hspace=0.1,wspace=0.1)
+
+    parametersa=['1.2','1.0','0.506']
+    parametersb=['0.29','0.3055','0.32']
+    for i in range(3):
+        ax=axes[0][i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EEB60.npz'%parametersa[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='purple',lw=2,zorder=4,alpha=0.6)
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        if i==0:
+            ax.text(19,0.325,'$+$',ha='right',va='center',fontsize=18,color='black')
+            ax.text(41,0.325,'$-$',ha='left',va='center',fontsize=18,color='black')
+            ax.text(30,0.1,'$C=+1$',ha='center',va='center',fontsize=18,color='black')
+        if i==1:
+            ax.text(18,0.292,'$0$',ha='right',va='center',fontsize=16,color='black')
+            ax.text(41,0.30,'$-$',ha='left',va='center',fontsize=18,color='black')
+        if i==2:
+            ax.text(19,0.225,'$-$',ha='right',va='center',fontsize=18,color='black')
+            ax.text(41,0.225,'$-$',ha='left',va='center',fontsize=18,color='black')
+            ax.text(30,0.075,'$C=0$',ha='center',va='center',fontsize=18,color='black')
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['']*7)
+        ax.set_ylim(0.0,0.52)
+        ax.set_yticks(np.linspace(0.0,0.5,6))
+        ax.set_yticklabels(['0','0.1','0.2','0.3','0.4','0.5'] if i in (0,) else ['']*6)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(15)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':18})
+        ax.text(3.0,0.50,'($a_%s$)'%(i+1),ha='left',va='top',fontsize=15,color='black')
+
+        ax=axes[1][i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_%s_0.656_1.2_1.2_FBFM_EEB60.npz'%parametersb[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='purple',lw=2,zorder=4,alpha=0.6)
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        if i==0:
+            ax.text(19,0.325,'$-$',ha='right',va='center',fontsize=18,color='black')
+            ax.text(41,0.325,'$+$',ha='left',va='center',fontsize=18,color='black')
+            ax.text(30,0.1,'$C=-1$',ha='center',va='center',fontsize=18,color='black')
+        if i==1:
+            ax.text(18,0.315,'$0$',ha='right',va='center',fontsize=18,color='black')
+            ax.text(41,0.315,'$0$',ha='left',va='center',fontsize=18,color='black')
+        if i==2:
+            ax.text(19,0.325,'$+$',ha='right',va='center',fontsize=18,color='black')
+            ax.text(41,0.325,'$-$',ha='left',va='center',fontsize=18,color='black')
+            ax.text(30,0.1,'$C=+1$',ha='center',va='center',fontsize=18,color='black')
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['$\Gamma$','','$K$','$M$','$K^\prime$','','$\Gamma$'])
+        for tick in ax.get_xticklabels(): tick.set_fontsize(18)
+        ax.set_xlabel('q',fontdict={'fontsize':16})
+
+        ax.set_ylim(0.0,0.52)
+        ax.set_yticks(np.linspace(0.0,0.5,6))
+        ax.set_yticklabels(['0','0.1','0.2','0.3','0.4','0.5'] if i in (0,) else ['']*4)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(15)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':18})
+        ax.text(3.0,0.50,'($b_%s$)'%(i+1),ha='left',va='top',fontsize=15,color='black')
+
+
+    pdb.set_trace()
+    plt.savefig('effectivespectra.pdf')
+    plt.close()
+
+def spectra():
+    plt.ion()
+    fig,axes=plt.subplots(nrows=3,ncols=3)
+    fig.subplots_adjust(left=0.115,right=0.985,top=0.99,bottom=0.13,hspace=0.1,wspace=0.1)
+
+    parametersa=['1.2','1.068','0.506']
+    parametersb=['0.29','0.308','0.32']
+    for i in range(3):
+        ax=axes[0,i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EB60(0.0,1.0).npz'%parametersa[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],ls='-',color='blue',alpha=0.8,lw=1.5,zorder=3)
+        ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color='blue',alpha=0.4 if i==0 else 0.2,zorder=2)
+
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['']*7)
+
+        ax.set_ylim(0.0,0.7)
+        ax.set_yticks(np.linspace(0.0,0.7,8))
+        ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''] if i in (0,) else ['']*8)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(13)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
+        ax.text(3.0,0.68,'($a_%s$)'%(i+1),ha='left',va='top',fontsize=13,color='black')
+
+        ax=axes[1,i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EB60.npz'%parametersa[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='green',lw=2,zorder=4)
+        ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color=(0.8,0.8,0.8),alpha=0.9,zorder=2)
+
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['']*7)
+
+        ax.set_ylim(0.0,0.7)
+        ax.set_yticks(np.linspace(0.0,0.7,8))
+        ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''] if i in (0,) else ['']*8)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(13)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
+        ax.text(3.0,0.68,'($b_%s$)'%(i+1),ha='left',va='top',fontsize=13,color='black')
+
+        ax=axes[2,i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_%s_0.656_1.2_1.2_FBFM_EB60.npz'%parametersb[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='green',lw=2,zorder=4)
+        ax.fill_between(data[:,0],np.max(data[:,3:],axis=1),np.min(data[:,3:],axis=1),color=(0.8,0.8,0.8),alpha=0.9,zorder=2)
+
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
+
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['$\Gamma$','','$K$','$M$','$K^\prime$','','$\Gamma$'])
+        for tick in ax.get_xticklabels(): tick.set_fontsize(16)
+        ax.set_xlabel('q',fontdict={'fontsize':16})
+
+        ax.set_ylim(0.0,0.7)
+        ax.set_yticks(np.linspace(0.0,0.7,8))
+        ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''] if i in (0,) else ['']*8)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(13)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
+        ax.text(3.0,0.68,'($c_%s$)'%(i+1),ha='left',va='top',fontsize=13,color='black')
+
+    pdb.set_trace()
+    plt.savefig('spectra.pdf')
+    plt.close()
+
 if __name__=='__main__':
     for arg in sys.argv:
         if arg in ('1','all'): lattice()
@@ -351,3 +554,5 @@ if __name__=='__main__':
         if arg in ('3','all'): constHUspectra()
         if arg in ('4','all'): phasediagram()
         if arg in ('5','all'): domainwallspectra()
+        if arg in ('6','all'): effectivespectra()
+        if arg in ('1-1','all'): spectra()

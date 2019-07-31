@@ -30,19 +30,24 @@ def tbatasks(name,parameters,lattice,terms,nk=50,jobs=()):
         assert len(lattice.vectors)==2
         tba.register(EB(name='Domain',path=KSpace(reciprocals=[lattice.reciprocals[0]],nk=100,),run=TBA.TBAEB))
     tba.summary()
+    return tba
 
-def fbfmtasks(name,parameters,lattice,terms,interactions,nk=50,scalefree=1.0,scaleint=1.0,jobs=()):
+def fbfmtasks(name,parameters,lattice,terms,interactions,nk=50,scalefree=1.0,scaleint=1.0,jobs=(),**kwargs):
     import HamiltonianPy.FBFM as FB
     from mpi4py import MPI
     nprocs=MPI.COMM_WORLD.Get_size()
     rank=MPI.COMM_WORLD.Get_rank()
-    assert  len(lattice.vectors)==2
+    assert len(lattice.vectors)==2
     ns,ne=len(lattice),len(lattice)//2
     if 'EB' in jobs:
         basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
         fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
         #fbfm.register(FB.EB(name='EB%s'%nk,path='H:G-K1',ne=nk**2,scalefree=scalefree,scaleint=scaleint,np=nprocs,run=FB.FBFMEB))
         fbfm.register(FB.EB(name='EB%s'%nk,path='H:G-K1,K1-M1,M1-K2,K2-G',ne=nk**2,scalefree=scalefree,scaleint=scaleint,np=nprocs,run=FB.FBFMEB))
+    if 'EEB' in jobs:
+        basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
+        fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
+        fbfm.register(EEB(name='EEB%s'%nk,path='H:G-K1,K1-M1,M1-K2,K2-G',showms=kwargs.get('showms',()),schmidt=kwargs.get('schmidt',False),scalefree=scalefree,scaleint=scaleint,run=FBFMEEB))
     if 'CN' in jobs:
         basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
         fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
@@ -54,6 +59,7 @@ def fbfmtasks(name,parameters,lattice,terms,interactions,nk=50,scalefree=1.0,sca
         if rank==0: print("%s_%s"%(fbfm,nk))
         fbfm.register(FB.EB(name='Domain%s'%nk,path=path,ne=ns*2,scalefree=scalefree,scaleint=scaleint,method='eigsh',np=nprocs,run=FB.FBFMEB))
     fbfm.summary()
+    return fbfm
 
 def fbfmphaseboundary(task,name,parameters,lattice,terms,interactions,ranges,nk=50,scalefree=1.0,scaleint=1.0):
     import HamiltonianPy.FBFM as FB
@@ -95,7 +101,7 @@ if __name__=='__main__':
     # parameters
     parameters=OrderedDict()
     parameters['t1']=1.0
-    parameters['t2']=0.32
+    parameters['t2']=0.3155
     parameters['phi']=0.656
     delta=0.0
 
@@ -129,6 +135,7 @@ if __name__=='__main__':
     #nk=60
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['EB'])
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['EB'])
+    #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,schmidt=True,showms=(0,nk//3,nk//3*2),jobs=['EEB'])
 
     #nk=20
     #ts=np.linspace(0.2,0.3,101)
