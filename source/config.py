@@ -132,6 +132,7 @@ def effectiveH(fbfm,k,scalefree=1.0,scaleint=1.0,schmidt=False):
         S[0,1]=-inner/norm
         S[1,1]=1/norm
         M=sl.inv(S).dot(M).dot(S)
+        assert np.allclose(sl.inv(S).dot(sl.inv(S).T.conjugate()),sl.inv(S).dot(V).dot(S))
     return M
 
 import HamiltonianPy.FBFM as FB
