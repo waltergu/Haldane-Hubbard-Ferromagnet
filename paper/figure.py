@@ -842,6 +842,140 @@ def freeelectron():
     plt.savefig('freeelectron.pdf')
     plt.close()
 
+def lattice_thesis():
+    from HamiltonianPy import PID,translation,rotation,Lattice
+    from HamiltonianPy import Hexagon
+    from mpl_toolkits.mplot3d import Axes3D
+
+    plt.ion()
+
+    gs=plt.GridSpec(1,3)
+    gs.update(left=0.05,right=1.0,top=1.0,bottom=0.0,hspace=0.22,wspace=0.1)
+
+    ax=plt.subplot(gs[0,0])
+    ax.axis('off')
+    ax.axis('equal')
+    ax.set_ylim(-0.5,1.2)
+
+    # Lattice
+    H6=Hexagon('H6')('1O-1O')
+    for bond in H6.bonds:
+        if bond.neighbour==0:
+            x,y=bond.spoint.rcoord[0],bond.spoint.rcoord[1]
+            ax.scatter(x,y,s=np.pi*5**2,color='brown' if bond.spoint.pid.site%2==0 else 'blue',zorder=3)
+        else:
+            x1,y1=bond.spoint.rcoord[0],bond.spoint.rcoord[1]
+            x2,y2=bond.epoint.rcoord[0],bond.epoint.rcoord[1]
+            ax.plot([x1,x2],[y1,y2],color='black',linewidth=2,zorder=1)
+
+    # A, B site
+    coord=H6.rcoord(PID('H6',0))
+    ax.text(coord[0]-0.05,coord[1],'A',ha='right',va='center',fontsize=20)
+    coord=H6.rcoord(PID('H6',1))
+    ax.text(coord[0]-0.05,coord[1],'B',ha='right',va='center',fontsize=20)
+
+    # t term
+    ax.annotate(s='',xy=H6.rcoord(PID('H6',0)),xytext=H6.rcoord(PID('H6',1)),arrowprops={'arrowstyle':'<->','color':'black','linewidth':2.0,'zorder':3})
+    coord=(H6.rcoord(PID('H6',0))+H6.rcoord(PID('H6',1)))/2
+    ax.text(coord[0]-0.05,coord[1],"$t$",fontweight='bold',color='black',ha='right',va='center',fontsize=22)
+
+    # t' term
+    b1=np.array([1.0,0.0])
+    b2=np.array([0.5,np.sqrt(3)/2])
+    def farrow(ax,coord,inc):
+        x,y=coord,coord+inc
+        ax.plot([x[0],y[0]],[x[1],y[1]],color='green',linewidth=3.0)
+        center,disp=(x+y)/2,inc/40
+        ax.annotate(s='',xy=center-disp,xytext=center,arrowprops={'color':'green','linewidth':2,'arrowstyle':'->','zorder':3})
+    farrow(ax,H6.rcoord(PID('H6',0)),b2)
+    farrow(ax,H6.rcoord(PID('H6',2)),(b1-b2))
+    farrow(ax,H6.rcoord(PID('H6',4)),-b1)
+    farrow(ax,H6.rcoord(PID('H6',5)),-b2)
+    farrow(ax,H6.rcoord(PID('H6',3)),-(b1-b2))
+    farrow(ax,H6.rcoord(PID('H6',1)),b1)
+    ax.text(0.5,np.sqrt(3)/6,"$t'e^{i\phi}$",fontweight='bold',color='black',ha='center',va='center',fontsize=22)
+
+    # Hubbard term
+    coord,disp,inc,delta=H6.rcoord(PID('H6',3)),np.array([0.02,0.0]),np.array([0.0,0.12]),np.array([0.02,0.0])
+    ax.annotate(s='',xy=coord-disp-inc-delta-0.01,xytext=coord-disp+inc+delta-0.01,arrowprops={'arrowstyle':'->','linewidth':2,'color':'purple','zorder':4})
+    ax.annotate(s='',xy=coord+disp+inc+delta+0.01,xytext=coord+disp-inc-delta+0.01,arrowprops={'arrowstyle':'->','linewidth':2,'color':'purple','zorder':4})
+    ax.text(coord[0]+0.07,coord[1]-0.02,"$U_B$",ha='left',va='center',fontweight='bold',color='black',fontsize=20)
+
+    coord,disp,inc,delta=H6.rcoord(PID('H6',4)),np.array([0.02,0.0]),np.array([0.0,0.12]),np.array([0.02,0.0])
+    ax.annotate(s='',xy=coord-disp-inc-delta-0.01,xytext=coord-disp+inc+delta-0.01,arrowprops={'arrowstyle':'->','linewidth':2,'color':'purple','zorder':4})
+    ax.annotate(s='',xy=coord+disp+inc+delta+0.01,xytext=coord+disp-inc-delta+0.01,arrowprops={'arrowstyle':'->','linewidth':2,'color':'purple','zorder':4})
+    ax.text(coord[0]+0.07,coord[1]-0.02,"$U_A$",ha='left',va='center',fontweight='bold',color='black',fontsize=20)
+
+    # numbering of subplot
+    ax.text(0.0,0.85,"(a)",ha='left',va='center',fontsize=16,color='black')
+
+    # The Brillouin Zone
+    ax=plt.subplot(gs[0,1])
+    ax.axis('equal')
+    ax.axis('off')
+    ax.set_ylim(-1.0,1.0)
+    ax.set_xlim(-0.7,0.7)
+
+    # FBZ
+    center=(H6.rcoords[0]+H6.rcoords[5])/2
+    bzrcoords=translation(rotation(cluster=H6.rcoords,angle=np.pi/6,center=center),-center)
+    BZ=Lattice(name="BZ",rcoords=bzrcoords)
+    for bond in BZ.bonds:
+        if bond.neighbour==1:
+            x1,y1=bond.spoint.rcoord[0],bond.spoint.rcoord[1]
+            x2,y2=bond.epoint.rcoord[0],bond.epoint.rcoord[1]
+            ax.plot([x1,x2],[y1,y2],linewidth=2,color='black')
+
+    # connection
+    p=(BZ.rcoord(PID('BZ',2))+BZ.rcoord(PID('BZ',5)))/2
+    ax.plot([0.0,p[0]],[0.0,p[1]],ls='--',lw=2,color='k')
+    p=BZ.rcoord(PID('BZ',2))
+    ax.plot([0.0,p[0]],[0.0,p[1]],ls='--',lw=2,color='k')
+
+    # axis
+    for disp in [np.array([0.60,0.0]),np.array([0.0,0.75])]:
+        ax.arrow(-disp[0],-disp[1],2*disp[0],2*disp[1],head_width=0.03,head_length=0.05,fc='k',ec='k')
+    ax.text(0.6,-0.03,"$\mathrm{k_x}$",va='top',ha='left',fontsize=14,color='black')
+    ax.text(-0.02,0.75,"$\mathrm{k_y}$",va='center',ha='right',fontsize=14,color='black')
+
+    # high-symmetric points
+    ax.text(-0.01,0.01,"$\Gamma$",ha='right',va='bottom',fontsize=16,color='black')
+    ax.text(0.6,0.055,"$K$",ha='center',va='bottom',fontsize=16,color='black')
+    ax.text(0.3,0.5,"$K'$",fontsize=16,color='black')
+    ax.text(-0.6,0.055,"$K''$",ha='center',va='bottom',fontsize=16,color='black')
+    ax.text(0.495,0.27,"$M$",ha='center',va='bottom',fontsize=16,color='black')
+
+    # numbering of subplot
+    ax.text(-0.65,0.77,"(b)",ha='left',va='center',fontsize=16,color='black')
+
+    # The domain wall geometry
+    ax=plt.subplot(gs[0,2],projection='3d')
+    ax.axis('off')
+    r,R=0.2,1.0
+    ax.set_xlim3d(-1,1)
+    ax.set_ylim3d(-1,1)
+    ax.set_zlim3d(-0.75,0.75)
+
+    theta,phi=np.meshgrid(np.linspace(0,np.pi,32),np.linspace(0,2*np.pi,32))
+    X=(R+r*np.cos(phi))*np.cos(theta)
+    Y=(R+r*np.cos(phi))*np.sin(theta)
+    Z=r*np.sin(phi)
+    ax.plot_surface(X,Y,Z,color='blue',alpha=0.5,rstride=1,cstride=1)
+
+    theta,phi=np.meshgrid(np.linspace(np.pi,2*np.pi,32),np.linspace(0,2*np.pi,32))
+    X=(R+r*np.cos(phi))*np.cos(theta)
+    Y=(R+r*np.cos(phi))*np.sin(theta)
+    Z=r*np.sin(phi)
+    ax.plot_surface(X,Y,Z,color='green',alpha=0.5,rstride=1,cstride=1)
+
+    ax.text2D(0.05,0.99,"(c)",transform=ax.transAxes,color='black',fontsize=16,va='top',ha='left')
+    ax.text2D(0.07,0.60,"L",transform=ax.transAxes,color='black',fontsize=16,va='center',ha='left')
+    ax.text2D(0.88,0.30,"R",transform=ax.transAxes,color='black',fontsize=16,va='center',ha='right')
+
+    pdb.set_trace()
+    plt.savefig('lattice_thesis.pdf')
+    plt.close()
+
 if __name__=='__main__':
     for arg in sys.argv:
         if arg in ('1','all'): lattice()
@@ -854,3 +988,4 @@ if __name__=='__main__':
         if arg in ('1-2','all'): bulkresult()
         if arg in ('1-3','all'): effectivespectra_thesis()
         if arg in ('1-4','all'): freeelectron()
+        if arg in ('1-5','all'): lattice_thesis()
