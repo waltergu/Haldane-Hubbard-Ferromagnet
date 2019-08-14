@@ -705,6 +705,143 @@ def bulkresult():
     plt.savefig('bulkresult.pdf')
     plt.close()
 
+def effectivespectra_thesis():
+    plt.ion()
+    fig,axes=plt.subplots(nrows=3,ncols=3)
+    fig.subplots_adjust(left=0.1,right=0.98,top=0.98,bottom=0.115,hspace=0.1,wspace=0.1)
+
+    parametersa=['1.2','1.0','0.506']
+    parametersb=['0.29','0.3055','0.32']
+    tagsa=['a','b','c']
+    tagsb=['d','e','f']
+    for i in range(3):
+        ax=axes[0][i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EEB60(0.0,1.0).npz'%parametersa[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='purple',lw=2,zorder=4,alpha=0.6)
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        if i==0:
+            ax.text(18,0.315,'$0$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.315,'$0$',ha='left',va='center',fontsize=13,color='black')
+        if i==1:
+            ax.text(18,0.305,'$-$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.305,'$-$',ha='left',va='center',fontsize=13,color='black')
+            ax.text(30,0.10,'$C=0$',ha='center',va='center',fontsize=13,color='black')
+        if i==2:
+            ax.text(19,0.225,'$-$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.225,'$-$',ha='left',va='center',fontsize=13,color='black')
+            ax.text(30,0.075,'$C=0$',ha='center',va='center',fontsize=13,color='black')
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['']*7)
+        ax.set_ylim(0.0,0.52)
+        ax.set_yticks(np.linspace(0.0,0.5,6))
+        ax.set_yticklabels(['0','0.1','0.2','0.3','0.4','0.5'] if i in (0,) else ['']*6)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(13)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':13})
+        ax.text(3.0,0.50,'(%s$_%s$)'%(tagsa[i],1),ha='left',va='top',fontsize=13,color='black')
+
+        ax=axes[1][i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EEB60.npz'%parametersa[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='purple',lw=2,zorder=4,alpha=0.6)
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        if i==0:
+            ax.text(19,0.325,'$+$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.325,'$-$',ha='left',va='center',fontsize=13,color='black')
+            ax.text(30,0.1,'$C=+1$',ha='center',va='center',fontsize=13,color='black')
+        if i==1:
+            ax.text(18,0.292,'$0$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.30,'$-$',ha='left',va='center',fontsize=13,color='black')
+        if i==2:
+            ax.text(19,0.225,'$-$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.225,'$-$',ha='left',va='center',fontsize=13,color='black')
+            ax.text(30,0.075,'$C=0$',ha='center',va='center',fontsize=13,color='black')
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['']*7)
+        ax.set_ylim(0.0,0.52)
+        ax.set_yticks(np.linspace(0.0,0.5,6))
+        ax.set_yticklabels(['0','0.1','0.2','0.3','0.4','0.5'] if i in (0,) else ['']*6)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(13)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':13})
+        ax.text(3.0,0.50,'(%s$_%s$)'%(tagsa[i],2),ha='left',va='top',fontsize=13,color='black')
+
+        ax=axes[2][i]
+        name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_%s_0.656_1.2_1.2_FBFM_EEB60.npz'%parametersb[i]
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:3],color='purple',lw=2,zorder=4,alpha=0.6)
+        ax.axvline(x=20,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        if i==0:
+            ax.text(19,0.325,'$-$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.325,'$+$',ha='left',va='center',fontsize=13,color='black')
+            ax.text(30,0.1,'$C=-1$',ha='center',va='center',fontsize=13,color='black')
+        if i==1:
+            ax.text(18,0.315,'$0$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.315,'$0$',ha='left',va='center',fontsize=13,color='black')
+        if i==2:
+            ax.text(19,0.325,'$+$',ha='right',va='center',fontsize=13,color='black')
+            ax.text(41,0.325,'$-$',ha='left',va='center',fontsize=13,color='black')
+            ax.text(30,0.1,'$C=+1$',ha='center',va='center',fontsize=13,color='black')
+        ax.minorticks_on()
+        ax.set_xlim(0.0,60.0)
+        ax.set_xticks(np.linspace(0,60,7))
+        ax.set_xticklabels(['$\Gamma$','','$K$','$M$','$K^\prime$','','$\Gamma$'])
+        for tick in ax.get_xticklabels(): tick.set_fontsize(13)
+        ax.set_xlabel('q',fontdict={'fontsize':13})
+
+        ax.set_ylim(0.0,0.52)
+        ax.set_yticks(np.linspace(0.0,0.5,6))
+        ax.set_yticklabels(['0','0.1','0.2','0.3','0.4','0.5'] if i in (0,) else ['']*4)
+        for tick in ax.get_yticklabels(): tick.set_fontsize(13)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':13})
+        ax.text(3.0,0.50,'(%s)'%(tagsb[i]),ha='left',va='top',fontsize=13,color='black')
+
+
+    pdb.set_trace()
+    plt.savefig('effectivespectra_thesis.pdf')
+    plt.close()
+
+def freeelectron():
+    plt.ion()
+    fig,axes=plt.subplots(nrows=1,ncols=3)
+    fig.subplots_adjust(left=0.07,right=0.99,top=0.98,bottom=0.175,hspace=0.1,wspace=0.18)
+
+    parameterst=['-0.1','-0.1','0.3155']
+    parametersphi=['0.0','0.656','0.656']
+    tags=['a','b','c']
+    for i in range(3):
+        ax=axes[i]
+        name='../result/tba/HCI_H2(1P-1P)_1.0_%s_%s_TBA_EB.npz'%(parameterst[i],parametersphi[i])
+        data=np.load(name)['data']
+        ax.plot(data[:,0],data[:,1:],color='purple',lw=2,zorder=4,alpha=0.6)
+        ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=60,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.axvline(x=80,ls=':',color='black',lw=1,zorder=0,alpha=0.4)
+        ax.minorticks_on()
+        ax.set_xlim(0.0,120.0)
+        ax.set_xticks(np.linspace(0,120,7))
+        ax.set_xticklabels(['$\Gamma$','','$K$','$M$','$K^\prime$','','$\Gamma$'])
+        for tick in ax.get_xticklabels(): tick.set_fontsize(16)
+        ax.set_xlabel('k',fontdict={'fontsize':16})
+
+
+        for tick in ax.get_yticklabels(): tick.set_fontsize(14)
+        if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
+        ax.text(3.0,4.5 if i==2 else 2.4,'(%s)'%(tags[i]),ha='left',va='top',fontsize=16,color='black')
+
+    pdb.set_trace()
+    plt.savefig('freeelectron.pdf')
+    plt.close()
+
 if __name__=='__main__':
     for arg in sys.argv:
         if arg in ('1','all'): lattice()
@@ -715,3 +852,5 @@ if __name__=='__main__':
         if arg in ('6','all'): effectivespectra()
         if arg in ('1-1','all'): spectra()
         if arg in ('1-2','all'): bulkresult()
+        if arg in ('1-3','all'): effectivespectra_thesis()
+        if arg in ('1-4','all'): freeelectron()
