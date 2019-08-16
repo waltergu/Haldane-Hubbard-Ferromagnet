@@ -259,12 +259,11 @@ def phasediagram():
 
     xs=[0.29,0.308,0.32]
     ys=[0.000,0.000,0.000]
-    #ax.scatter(xs,ys,s=30,color='green',marker='o',zorder=2,clip_on=False)
-    ax.scatter(xs,ys,s=100,color='red',marker='*',zorder=2,clip_on=False)
+    ax.scatter(xs,ys,s=50,color='red',marker='*',zorder=2,clip_on=False)
 
     xs=[0.3155,0.3155,0.3155]
     ys=[0.0000,0.1320,0.6940]
-    ax.scatter(xs,ys,s=100,color='red',marker='*',zorder=2,clip_on=False)
+    ax.scatter(xs,ys,s=50,color='red',marker='*',zorder=2,clip_on=False)
 
     ax.minorticks_on()
     ax.set_xlim(0.24,0.36)
@@ -273,18 +272,18 @@ def phasediagram():
     ax.set_yticks(np.linspace(0.0,0.7,8))
     ax.set_yticklabels(['0','','0.2','','0.4','','0.6',''])
     for tick in ax.get_xticklabels():
-        tick.set_fontsize(16)
+        tick.set_fontsize(13)
     for tick in ax.get_yticklabels():
-        tick.set_fontsize(16)
-    ax.set_xlabel("$t^\prime/t$",fontdict={'fontsize':22})
-    ax.set_ylabel("$\Delta U/t$",fontdict={'fontsize':22})
-    ax.text(0.26,0.53,"NFM",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.305,0.43,"FM",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.305,0.33,"$(C=0)$",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.275,0.2,"TFM$^+$",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.275,0.1,"$(C=+1)$",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.3305,0.2,"TFM$^-$",fontsize=22,color='black',ha='center',va='center')
-    ax.text(0.3305,0.1,"$(C=-1)$",fontsize=22,color='black',ha='center',va='center')
+        tick.set_fontsize(13)
+    ax.set_xlabel("$t^\prime/t$",fontdict={'fontsize':16})
+    ax.set_ylabel("$\Delta U/t$",fontdict={'fontsize':16})
+    ax.text(0.26,0.53,"NFM",fontsize=14,color='black',ha='center',va='center')
+    ax.text(0.305,0.43,"FM",fontsize=14,color='black',ha='center',va='center')
+    ax.text(0.305,0.31,"$(C=0)$",fontsize=14,color='black',ha='center',va='center')
+    ax.text(0.275,0.2,"TFM$^+$",fontsize=14,color='black',ha='center',va='center')
+    ax.text(0.275,0.1,"$(C=+1)$",fontsize=14,color='black',ha='center',va='center')
+    ax.text(0.3305,0.2,"TFM$^-$",fontsize=14,color='black',ha='center',va='center')
+    ax.text(0.3305,0.1,"$(C=-1)$",fontsize=14,color='black',ha='center',va='center')
 
     pdb.set_trace()
     plt.savefig('phasediagram.pdf')
@@ -478,6 +477,7 @@ def spectra():
     tagsa=['a','b','c']
     tagsb=['d','e','f']
     for i in range(3):
+        # Flatband limit
         ax=axes[0,i]
         name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EB60(0.0,1.0).npz'%parametersa[i]
         data=np.load(name)['data']
@@ -488,7 +488,7 @@ def spectra():
         ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
         ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
         if i==1: ax.text(30,0.1,'$C=0$',ha='center',va='center',fontsize=14,color='black')
-        if i==2: ax.text(30,0.075,'$C=0$',ha='center',va='center',fontsize=14,color='black')
+        if i==2: ax.text(30,0.07,'$C=0$',ha='center',va='center',fontsize=14,color='black')
 
         ax.minorticks_on()
         ax.set_xlim(0.0,60.0)
@@ -503,6 +503,7 @@ def spectra():
 
         ax.text(3.0,0.68,'(%s$_%s$)'%(tagsa[i],1),ha='left',va='top',fontsize=13,color='black')
 
+        # Const H0
         ax=axes[1,i]
         name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_0.3155_0.656_1.2_%s_FBFM_EB60.npz'%parametersa[i]
         data=np.load(name)['data']
@@ -513,7 +514,10 @@ def spectra():
         ax.axvline(x=30,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
         ax.axvline(x=40,ls=':',color='black',lw=1,zorder=0,alpha=0.5)
         if i==0: ax.text(30,0.1,'$C=-1$',ha='center',va='center',fontsize=14,color='black')
-        if i==2: ax.text(30,0.035,'$C=0$',ha='center',va='center',fontsize=14,color='black')
+        if i==2:
+            ax.annotate(s='',xy=[3.0,0.0],xytext=[3.0,0.13],arrowprops={'color':'black','linewidth':1,'arrowstyle':'->','zorder':3})
+            ax.annotate(s='',xy=[57.0,0.0],xytext=[57.0,0.13],arrowprops={'color':'black','linewidth':1,'arrowstyle':'->','zorder':3})
+            ax.text(30,0.035,'$C=0$',ha='center',va='center',fontsize=14,color='black')
 
         ax.minorticks_on()
         ax.set_xlim(0.0,60.0)
@@ -527,6 +531,7 @@ def spectra():
         if i in (0,): ax.set_ylabel('$E/t$',fontdict={'fontsize':16})
         ax.text(3.0,0.68,'(%s$_%s$)'%(tagsa[i],2),ha='left',va='top',fontsize=13,color='black')
 
+        # Const HU
         ax=axes[2,i]
         name='../result/fbfm/HCI_H2(1P-1P)_up_1.0_%s_0.656_1.2_1.2_FBFM_EB60.npz'%parametersb[i]
         data=np.load(name)['data']
