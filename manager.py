@@ -58,6 +58,16 @@ def fbfmtasks(name,parameters,lattice,terms,interactions,nk=50,scalefree=1.0,sca
         fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
         if rank==0: print("%s_%s"%(fbfm,nk))
         fbfm.register(FB.EB(name='Domain%s'%nk,path=path,ne=ns*2,scalefree=scalefree,scaleint=scaleint,method='eigsh',np=nprocs,run=FB.FBFMEB))
+    if 'THT' in jobs:
+        basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
+        fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
+        fbfm.add(TH(name='TH%s'%nk,BZ=basis.BZ,ns=[0,1],ncontinuum=1,scalefree=scalefree,scaleint=scaleint))
+        fbfm.register(THT(name='THT%s'%nk,Ts=np.linspace(0.0,0.5,51)+10**-3,dependences=['TH%s'%nk],run=FBFMTHT))
+    if 'THP' in jobs:
+        basis=FB.FBFMBasis(BZ=FBZ(lattice.reciprocals,nks=(nk,nk)),filling=Fraction(ne,ns*2))
+        fbfm=fbfmconstruct(name,parameters,basis,lattice,terms,interactions)
+        fbfm.add(TH(name='TH%s'%nk,BZ=basis.BZ,ns=[0,1],ncontinuum=1,T=0.1,scalefree=scalefree,scaleint=scaleint))
+        fbfm.register(THP(name='THP%s'%nk,params=BaseSpace(('t2',np.linspace(kwargs['t2tp'], kwargs['t2bt'], 31))),dependences=['TH%s'%nk],run=FBFMTHP))
     fbfm.summary()
     return fbfm
 
@@ -102,7 +112,9 @@ if __name__=='__main__':
     parameters=OrderedDict()
     parameters['t1']=1.0
     parameters['t2']=0.3155
+    # parameters['t2']=0.29
     parameters['phi']=0.656
+    # delta=0.694
     delta=0.0
 
     # tba
@@ -149,6 +161,15 @@ if __name__=='__main__':
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['CN'])
     #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['CN'])
 
+    # thermal hall
+    nk=24
+    #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['THT'])
+    #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['THT'])
+
+    t2tp, t2bt = 0.29, 0.32
+    fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['THP'],t2tp=t2tp,t2bt=t2bt)
+    #fbfmtasks(name1,parameters,H2('1P-1P',nnb),[t,ci],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['THT'],t2tp=t2tp,t2bt=t2bt)
+
     # fbfm domain wall
     #nk=60
     #parameters['Ual']=1.9
@@ -162,3 +183,9 @@ if __name__=='__main__':
     #parameters['t2r']=1.2
     #parameters['t2a']=1.2*2
     #fbfmtasks(name1,parameters,lattice,[t,ci],[Ual(pos),Uar(pos),Ubl(pos),Ubr(pos)],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['Domain'])
+
+    # ti
+    #nk=30
+    #fbfmtasks(name2,parameters,H2('1P-1P',nnb),[t,ti],[Ua,Ub],nk=nk,scalefree=1.0,scaleint=1.0,jobs=['EB'])
+    #fbfmtasks(name2,parameters,H2('1P-1P',nnb),[t,ti],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=1.0,jobs=['EB'])
+    #fbfmtasks(name2,parameters,H2('1P-1P',nnb),[t,ti],[Ua,Ub],nk=nk,scalefree=0.0,scaleint=0.0,schmidt=True,showms=(0,nk//3,nk//3*2),jobs=['EEB'])

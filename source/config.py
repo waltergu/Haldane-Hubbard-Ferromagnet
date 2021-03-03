@@ -1,7 +1,7 @@
 from HamiltonianPy import *
 import numpy as np
 
-__all__=['name1','name2','nnb','parametermap','idfmap','haldane','km','t','ci','ti','dm','Ua','Ub','t2l','t2r','t2a','dml','dmr','Ual','Uar','Ubl','Ubr','H2','H4','effectiveH','EEB','FBFMEEB','FBFMECN']
+__all__=['name1','name2','nnb','parametermap','idfmap','haldane','km','t','ci','ti','dm','Ua','Ub','t2l','t2r','t2a','dml','dmr','Ual','Uar','Ubl','Ubr','H2','H4','effectiveH','EEB','FBFMEEB','FBFMECN','TH','THT','FBFMTHT','THP','FBFMTHP']
 
 # The configs of the model
 name1="HCI"
@@ -38,11 +38,11 @@ def km(bond,phi):
 
 # terms
 t=lambda **parameters: Hopping('t1',parameters['t1'],neighbour=1,statistics='f')
-ci=lambda **parameters: Hopping('t2',parameters['t2'],neighbour=2,indexpacks=lambda bond: haldane(bond,parameters['phi']),statistics='f')
-ti=lambda **parameters: Hopping('t2',parameters['t2'],neighbour=2,indexpacks=lambda bond: km(bond,parameters['phi']),statistics='f')
-dm=lambda **parameters: Onsite('dm',parameters['dm'],indexpacks=sigmaz('sl'),statistics='f')
-Ua=lambda **parameters: Hubbard('Ua',parameters['Ua'],atom=0,statistics='f')
-Ub=lambda **parameters: Hubbard('Ub',parameters['Ub'],atom=1,statistics='f')
+ci=lambda **parameters: Hopping('t2',parameters['t2'],neighbour=2,indexpacks=lambda bond: haldane(bond,parameters['phi']),statistics='f',modulate=True)
+ti=lambda **parameters: Hopping('t2',parameters['t2'],neighbour=2,indexpacks=lambda bond: km(bond,parameters['phi']),statistics='f',modulate=True)
+dm=lambda **parameters: Onsite('dm',parameters['dm'],indexpacks=sigmaz('sl'),statistics='f',modulate=True)
+Ua=lambda **parameters: Hubbard('Ua',parameters['Ua'],atom=0,statistics='f',modulate=True)
+Ub=lambda **parameters: Hubbard('Ub',parameters['Ub'],atom=1,statistics='f',modulate=True)
 
 # for domain walls
 def left(pos):
@@ -175,3 +175,114 @@ def FBFMECN(engine,app):
     engine.log<<'\n'
     engine.log<<'Chern numbers: %s'%(", ".join("%s(%s)"%(phase,n) for n,phase in zip(app.ns,phases)))<<'\n'
     if app.returndata: return phases
+
+from scipy.linalg import eigh
+class TH(App):
+    def __init__(self, BZ, ns, T=None, scalefree=1.0, scaleint=1.0, ncontinuum=None, **kwargs):
+        self.BZ = BZ
+        self.ns = ns
+        self.T = T
+        self.scalefree = scalefree
+        self.scaleint = scaleint
+        self.ncontinuum = ncontinuum
+        self.emesh = {}
+        self.vmesh = {}
+        self.cmesh = {}
+        self.jmesh = {}
+
+    def set(self, H):
+        assert len(self.BZ.type.periods) == 2
+        N1, N2 = self.BZ.type.periods
+        for (i, j) in it.product(range(N1), range(N2)):
+            es, vs = eigh(H(i, j))
+            if isinstance(self.ncontinuum, int):
+                self.jmesh[(i, j)] = iscontinuum(es[0:self.ncontinuum+10], self.ncontinuum)
+            else:
+                self.jmesh[(i, j)] = False
+            self.emesh[(i, j)] = es[self.ns]
+            self.vmesh[(i, j)] = vs[:, self.ns]
+        phases = np.zeros(len(self.ns), dtype=np.float64)
+        for (i, j) in it.product(range(N1), range(N2)):
+            i1, j1 = i, j
+            i2, j2 = (i+1)%N1, (j+1)%N2
+            ic = self.jmesh[(i, j)]
+            vs1, vs2, vs3, vs4 = self.vmesh[(i1, j1)], self.vmesh[(i2, j1)], self.vmesh[(i2, j2)], self.vmesh[(i1, j2)]
+            self.cmesh[(i, j)] = np.zeros(phases.shape, dtype=np.float64)
+            for (k, n) in enumerate(self.ns):
+                if n<self.ncontinuum or not ic:
+                    p1, p2 = np.vdot(vs1[:, k], vs2[:, k]), np.vdot(vs2[:, k], vs3[:, k])
+                    p3, p4 = np.vdot(vs3[:, k], vs4[:, k]), np.vdot(vs4[:, k], vs1[:, k])
+                    phase = np.angle(p1*p2*p3*p4)
+                    self.cmesh[(i, j)][k] = phase
+                    phases[k] += phase
+        print("phases: %s"%(phases/np.pi/2))
+        return phases/np.pi/2
+
+    def compute(self):
+        result = 0.0
+        N1, N2 = self.BZ.type.periods
+        for (i, j) in it.product(range(N1), range(N2)):
+            es, cs = self.emesh[(i, j)], self.cmesh[(i, j)]
+            for k in range(len(es)):
+                result += coeff_1(bose(self.T, es[k]))*cs[k]
+        return result*self.T
+
+class THT(App):
+    def __init__(self, Ts, **kwargs):
+        self.Ts = Ts
+
+def FBFMTHT(engine, app):
+    hall = engine.apps[app.dependences[0]]
+    hall.set(lambda i, j: engine.matrix(k=(i, j),scalefree=hall.scalefree,scaleint=hall.scaleint))
+    result = np.zeros((len(app.Ts), 2), dtype=np.float64)
+    name='%s_%s(%s,%s)'%(engine.tostr(), app.name, hall.scalefree, hall.scaleint)
+    engine.log<<('%s: \n'%name)
+    for i, T in enumerate(app.Ts):
+        engine.log<<('%s, '%T, )
+        hall.T = T
+        result[i, 0] = T
+        result[i, 1] = hall.compute()
+    engine.log<<('\n')
+    if app.savedata: np.savetxt('%s/%s.dat'%(engine.dout, name), result)
+    if app.plot: app.figure('L', result, '%s/%s'%(engine.dout, name))
+    if app.returndata: return result
+
+class THP(App):
+    def __init__(self, params, **kwargs):
+        self.params = params
+
+def FBFMTHP(engine, app):
+    hall = engine.apps[app.dependences[0]]
+    result = np.zeros((app.params.rank(0), 2), dtype=np.float64)
+    name='%s_%s(%s,%s)_%s'%(engine.tostr(mask=app.params.tags), app.name, hall.scalefree, hall.scaleint, hall.T)
+    engine.log<<('%s: \n'%name)
+    for i, param in enumerate(app.params('+')):
+        engine.log<<("%s, "%param)
+        engine.update(**param)
+        engine.tostr(mask=app.params.tags)
+        hall.set(lambda i, j: engine.matrix(k=(i, j),scalefree=hall.scalefree,scaleint=hall.scaleint))
+        result[i, 0] = list(param.values())[0]
+        result[i, 1] = hall.compute()
+    engine.log<<'\n'
+    if app.savedata: np.savetxt('%s/%s.dat'%(engine.dout, name), result)
+    if app.plot: app.figure('L', result, '%s/%s'%(engine.dout, name))
+    if app.returndata: return result    
+
+from scipy.integrate import quad
+bose = lambda t, e: 1/(np.exp(e/t)-1)
+def ploylogarithm(x, n, tol=5*10**-10):
+    sum = x
+    order = 1
+    delta = 1.0
+    while np.abs(delta)>tol:
+        order += 1
+        delta = x**order/order**n
+        sum += delta
+    return sum
+
+coeff_1 = lambda n: quad(lambda x: (np.log((1+x)/x))**2, 0, n)[0]# - np.pi**2/3
+coeff_2 = lambda n, tol=5*10**-10: (1+n)*(np.log((1+n)/n))**2 - (np.log(n))**2 - 2*ploylogarithm(-n, 2, tol=tol)# - np.pi**2/3
+
+def iscontinuum(es, region):
+    dEs = (es[1:]-es[:-1])/(es.max()-es.min())
+    return dEs[region-1] < np.sum(dEs[region:])
